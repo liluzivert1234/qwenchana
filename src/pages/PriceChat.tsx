@@ -2,6 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 export default function PriceChat() {
   const location = useLocation();
@@ -137,7 +139,9 @@ export default function PriceChat() {
       {responseText && (
         <div>
           <h3>Response:</h3>
-          <div style={{ whiteSpace: "pre-wrap" }}>{responseText}</div>
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>
+            {responseText}
+          </ReactMarkdown>
         </div>
       )}
     </div>
