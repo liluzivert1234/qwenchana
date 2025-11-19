@@ -46,7 +46,7 @@ export default function PriceChat() {
               {
                 role: "system",
                 content:
-                  "You are a helpful assistant specialized in providing general commodity price information and historical market context.",
+                  "You are a helpful assistant specialized in providing general commodity price information and historical market context. **Be concise as possible.** ",
               },
               { role: "user", content: queryToSend },
             ],

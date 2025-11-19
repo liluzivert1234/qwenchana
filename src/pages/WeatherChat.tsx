@@ -44,7 +44,7 @@ export default function WeatherChat() {
               {
                 role: "system",
                 content:
-                  "You are a helpful assistant specialized in describing historical climate patterns and typical weather risks for agriculture.",
+                  "You are a helpful assistant specialized in describing historical climate patterns and typical weather risks for agriculture. **Be concise as possible.** ",
               },
               { role: "user", content: queryToSend },
             ],

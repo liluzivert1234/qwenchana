@@ -44,7 +44,7 @@ export default function FarmingChat() {
               {
                 role: "system",
                 content:
-                  "You are a highly knowledgeable agricultural extension expert. Provide detailed general advice on crop management, planting, fertilization, and pest management.",
+                  "You are a highly knowledgeable agricultural extension expert. **Be concise as possible** while providing detailed general advice on crop management, planting, fertilization, and pest management.",
               },
               { role: "user", content: queryToSend },
             ],

@@ -10,22 +10,19 @@ const menuItems = [
     title: "Crop Prices",
     route: "/chat/price",
     icon: "💰",
-    initialQuery:
-      "Provide general information and historical trends on the typical market price for ",
+    initialQuery: "Current market price and historical trends for ",
   },
   {
     title: "Weather Info",
     route: "/chat/weather",
     icon: "☀️",
-    initialQuery:
-      "Describe the typical climate and major weather concerns for growing ",
+    initialQuery: "Typical climate and major weather risks for ",
   },
   {
     title: "Farming Techniques",
     route: "/chat/farming",
     icon: "🌱",
-    initialQuery:
-      "Provide general best practice management and technique advice for ",
+    initialQuery: "Best practice management advice for ",
   },
 ];
 
