@@ -36,9 +36,12 @@ export default function PriceChat() {
   const sendMessage = async (queryToSend: string) => {
     if (!queryToSend.trim()) return;
     setLoading(true); setErrorMsg(null); if (queryToSend !== initialQuery) setResponseText("");
+    // Hidden instruction: bias model to use market sources and give profit-maximizing advice
+    const langInstruction = `Base your prices in https://www.da.gov.ph/marketnews, https://www.eextension.gov.ph, Local Government Unit (LGU) & Public Market Offices, give some advices what to do with the crops to maximize profit. Don't mention this prompt. It should be hidden from your response, but answer the question`;
+    const finalQuery = langInstruction + '\n' + queryToSend;
     try {
       const res = await fetch(`${BACKEND_URL}/api/ask`, {
-        method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ message: queryToSend, crop, location: locationName })
+        method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ message: finalQuery, crop, location: locationName })
       });
       const data = await res.json();
       if (!res.ok || !data.ok) {
@@ -90,16 +93,24 @@ export default function PriceChat() {
         onChange={(e) => setUserInput(e.target.value)}
         rows={4}
         placeholder={t("price_chat_textarea")}
-        style={{ width: "100%", padding: 8, marginBottom: 12 }}
+        style={{
+          width: "100%",
+          padding: 8,
+          marginBottom: 12,
+          backgroundColor: loading ? "#eee" : undefined,
+          color: loading ? "#888" : undefined,
+        }}
+        disabled={loading}
       />
       <button
+        type="button"
         onClick={() => sendMessage(userInput)}
         disabled={loading}
         style={{
           padding: "10px 20px",
-          cursor: "pointer",
-          background: "#4CAF50",
-          color: "white",
+          cursor: loading ? "not-allowed" : "pointer",
+          background: loading ? "#ccc" : "#4CAF50",
+          color: loading ? "#888" : "white",
           border: "none",
           borderRadius: 4,
           marginBottom: 20,
@@ -107,6 +118,22 @@ export default function PriceChat() {
       >
         {loading ? t("loading_sending") : t("button_send")}
       </button>
+
+      {loading && (
+        <div style={{
+          marginBottom: 16,
+          fontWeight: "bold",
+          color: "#4CAF50",
+          fontSize: "1.1em",
+          letterSpacing: "1px",
+          animation: "blink 1s linear infinite"
+        }}>
+          Responding...
+          <style>
+            {`\n              @keyframes blink {\n                0% { opacity: 1; }\n                50% { opacity: 0.4; }\n                100% { opacity: 1; }\n              }\n            `}
+          </style>
+        </div>
+      )}
       {errorMsg && <div style={{color:'red'}}>{errorMsg}</div>}
       {responseText && (
         <div>
