@@ -30,6 +30,16 @@ body {
   min-height: 100vh;
 }
 
+#root {
+  /* 1. Force the root container to span the full width of the viewport */
+  width: 100vw;
+
+  /* 2. Re-apply flex centering to make sure all content inside it is centered */
+  display: flex;
+  justify-content: center;
+  align-items: flex-start; /* Keeps content at the top of the page */
+}
+
 h1 {
   font-size: 3.2em;
   line-height: 1.1;

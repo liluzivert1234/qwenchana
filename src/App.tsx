@@ -1,14 +1,29 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import Login from "./pages/login";
-import Chat from "./pages/chat";
+import { BrowserRouter, Routes, Route } from "react-router-dom";
+import MainMenu from "./pages/MainMenu";
+import PriceChat from "./pages/PriceChat";
+import WeatherChat from "./pages/WeatherChat";
+import FarmingChat from "./pages/FarmingChat";
+import Login from "./pages/Login";
 
-export default function App() {
+function App() {
   return (
-    <Router>
+    <BrowserRouter>
       <Routes>
+        {/* Assuming a Login page is at the root path */}
         <Route path="/" element={<Login />} />
-        <Route path="/chat" element={<Chat />} />
+
+        {/* YES! This is your main menu path */}
+        <Route path="/menu" element={<MainMenu />} />
+
+        {/* Dedicated Chat Pages */}
+        <Route path="/chat/price" element={<PriceChat />} />
+        <Route path="/chat/weather" element={<WeatherChat />} />
+        <Route path="/chat/farming" element={<FarmingChat />} />
+
+        <Route path="*" element={<div>404 Not Found</div>} />
       </Routes>
-    </Router>
+    </BrowserRouter>
   );
 }
+
+export default App;

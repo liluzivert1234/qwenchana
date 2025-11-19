@@ -1,8 +1,11 @@
-import { useState } from "react";
-import { useLocation } from "react-router-dom";
+// src/pages/WeatherChat.tsx
 
-export default function Chat() {
+import { useState } from "react";
+import { useLocation, useNavigate } from "react-router-dom";
+
+export default function WeatherChat() {
   const location = useLocation();
+  const navigate = useNavigate();
   const username = (location.state as any)?.username || "Guest";
 
   const [userInput, setUserInput] = useState("");
@@ -29,7 +32,12 @@ export default function Chat() {
           body: JSON.stringify({
             model: "qwen-plus",
             messages: [
-              { role: "system", content: "You are a helpful assistant." },
+              // Custom, specialized prompt for weather
+              {
+                role: "system",
+                content:
+                  "You are a helpful assistant specialized in providing accurate, timely weather and climate information for agricultural decision-making, including forecasts and alerts.",
+              },
               { role: "user", content: userInput },
             ],
           }),
@@ -52,13 +60,30 @@ export default function Chat() {
   };
 
   return (
-    <div style={{ padding: 20, fontFamily: "Arial", maxWidth: 700, margin: "auto" }}>
-      <h1>Qwen Chat Assistant</h1>
+    <div
+      style={{
+        padding: 20,
+        fontFamily: "Arial",
+        maxWidth: 700,
+        margin: "auto",
+      }}
+    >
+      {/* Back Button */}
+      <button
+        onClick={() => navigate("/menu", { state: { username } })}
+        style={{ marginBottom: 15, padding: "8px 15px", cursor: "pointer" }}
+      >
+        ← Back to Main Menu
+      </button>
+
+      <h2>☀️ Weather Assistant</h2>
       <p>Logged in as: {username}</p>
+
       <textarea
         value={userInput}
         onChange={(e) => setUserInput(e.target.value)}
         rows={4}
+        placeholder="Ask about today's forecast, rainfall predictions, or typhoon alerts..."
         style={{ width: "100%", padding: 8, marginBottom: 12 }}
       />
       <button
