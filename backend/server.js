@@ -1,7 +1,9 @@
-// server.js
 import express from "express";
 import mysql from "mysql2/promise";
 import cors from "cors";
+import dotenv from "dotenv";
+
+dotenv.config(); // Load environment variables
 
 const app = express();
 app.use(cors());
@@ -9,13 +11,12 @@ app.use(express.json());
 
 // MySQL connection
 const pool = mysql.createPool({
-  host: "localhost",
-  user: "root",
-  password: "pulvert05",
-  database: "chatdb",
+  host: process.env.MYSQL_HOST,
+  user: process.env.MYSQL_USER,
+  password: process.env.MYSQL_PASSWORD,
+  database: process.env.MYSQL_DATABASE,
 });
 
-// Login endpoint (check username & password)
 app.post("/api/login", async (req, res) => {
   const { username, password } = req.body;
 
@@ -38,4 +39,5 @@ app.post("/api/login", async (req, res) => {
   }
 });
 
-app.listen(3001, () => console.log("Server running on http://localhost:3001"));
+const PORT = process.env.PORT || 3001;
+app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
