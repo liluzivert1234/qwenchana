@@ -1,28 +1,33 @@
 // src/pages/PriceChat.tsx
 
-import { useState } from "react"; // Removed unused 'React' import
+import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 export default function PriceChat() {
   const location = useLocation();
-  const navigate = useNavigate(); // For the back button
+  const navigate = useNavigate();
+
+  // Retrieve context data passed from MainMenu
   const username = (location.state as any)?.username || "Guest";
+  const crop = (location.state as any)?.crop || "";
+  const locationName = (location.state as any)?.location || "";
+  const initialQuery = (location.state as any)?.initialQuery || "";
 
   const [userInput, setUserInput] = useState("");
   const [responseText, setResponseText] = useState("");
   const [loading, setLoading] = useState(false);
 
+  // NOTE: In a production app, the API call should be proxied through a secure backend (e.g., Function Compute)
   const DASHSCOPE_API_KEY = import.meta.env.VITE_DASHSCOPE_API_KEY;
 
-  const sendMessage = async () => {
-    if (!userInput.trim()) return;
-
-    // IMPORTANT: Client-side API calls to external services like Qwen
-    // should ideally be proxied through your own secure backend (like Node.js/Function Compute)
-    // to hide the API key and implement rate limiting.
+  const sendMessage = async (queryToSend: string) => {
+    if (!queryToSend.trim()) return;
 
     setLoading(true);
-    setResponseText("");
+    // Clear response for the new query only if it's a follow-up
+    if (queryToSend !== initialQuery) {
+      setResponseText("");
+    }
 
     try {
       const res = await fetch(
@@ -36,13 +41,12 @@ export default function PriceChat() {
           body: JSON.stringify({
             model: "qwen-plus",
             messages: [
-              // Custom, specialized prompt for this specific page
               {
                 role: "system",
                 content:
-                  "You are a helpful assistant specialized in providing real-time commodity and crop price information.",
+                  "You are a helpful assistant specialized in providing general commodity price information and historical market context.",
               },
-              { role: "user", content: userInput },
+              { role: "user", content: queryToSend },
             ],
           }),
         }
@@ -63,6 +67,13 @@ export default function PriceChat() {
     setLoading(false);
   };
 
+  // Auto-submit initial query when component mounts
+  useEffect(() => {
+    if (initialQuery) {
+      sendMessage(initialQuery);
+    }
+  }, []);
+
   return (
     <div
       style={{
@@ -72,7 +83,6 @@ export default function PriceChat() {
         margin: "auto",
       }}
     >
-      {/* Back Button */}
       <button
         onClick={() => navigate("/menu", { state: { username } })}
         style={{ marginBottom: 15, padding: "8px 15px", cursor: "pointer" }}
@@ -81,17 +91,36 @@ export default function PriceChat() {
       </button>
 
       <h2>💰 Crop Price Assistant</h2>
+
+      {/* ⚠️ CRITICAL DISCLAIMER */}
+      <div
+        style={{
+          padding: "10px",
+          backgroundColor: "#ffd7004d",
+          borderLeft: "4px solid #FFD700",
+          marginBottom: "20px",
+          fontSize: "0.9em",
+        }}
+      >
+        ⚠️ **DATA ALERT:** This assistant is currently using **base Qwen's
+        general knowledge**. The price information provided is **NOT** from
+        real-time APIs and may be outdated.
+      </div>
+
+      <p style={{ fontWeight: "bold" }}>
+        Context: {crop} in {locationName}
+      </p>
       <p>Logged in as: {username}</p>
 
       <textarea
         value={userInput}
         onChange={(e) => setUserInput(e.target.value)}
         rows={4}
-        placeholder="Ask about the price of rice, corn, or soybeans..."
+        placeholder="Ask a follow-up question (e.g., 'What factors affect corn prices?')..."
         style={{ width: "100%", padding: 8, marginBottom: 12 }}
       />
       <button
-        onClick={sendMessage}
+        onClick={() => sendMessage(userInput)}
         disabled={loading}
         style={{
           padding: "10px 20px",

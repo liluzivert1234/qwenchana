@@ -1,12 +1,17 @@
 // src/pages/FarmingChat.tsx
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 
 export default function FarmingChat() {
   const location = useLocation();
   const navigate = useNavigate();
+
+  // Retrieve context data passed from MainMenu
   const username = (location.state as any)?.username || "Guest";
+  const crop = (location.state as any)?.crop || "";
+  const locationName = (location.state as any)?.location || "";
+  const initialQuery = (location.state as any)?.initialQuery || "";
 
   const [userInput, setUserInput] = useState("");
   const [responseText, setResponseText] = useState("");
@@ -14,11 +19,13 @@ export default function FarmingChat() {
 
   const DASHSCOPE_API_KEY = import.meta.env.VITE_DASHSCOPE_API_KEY;
 
-  const sendMessage = async () => {
-    if (!userInput.trim()) return;
+  const sendMessage = async (queryToSend: string) => {
+    if (!queryToSend.trim()) return;
 
     setLoading(true);
-    setResponseText("");
+    if (queryToSend !== initialQuery) {
+      setResponseText("");
+    }
 
     try {
       const res = await fetch(
@@ -32,13 +39,12 @@ export default function FarmingChat() {
           body: JSON.stringify({
             model: "qwen-plus",
             messages: [
-              // Custom, specialized prompt for farming techniques
               {
                 role: "system",
                 content:
-                  "You are a highly knowledgeable agricultural extension expert. Provide detailed advice on crop management, pest identification, fertilization, and planting best practices.",
+                  "You are a highly knowledgeable agricultural extension expert. Provide detailed general advice on crop management, planting, fertilization, and pest management.",
               },
-              { role: "user", content: userInput },
+              { role: "user", content: queryToSend },
             ],
           }),
         }
@@ -59,6 +65,13 @@ export default function FarmingChat() {
     setLoading(false);
   };
 
+  // Auto-submit initial query when component mounts
+  useEffect(() => {
+    if (initialQuery) {
+      sendMessage(initialQuery);
+    }
+  }, []);
+
   return (
     <div
       style={{
@@ -68,7 +81,6 @@ export default function FarmingChat() {
         margin: "auto",
       }}
     >
-      {/* Back Button */}
       <button
         onClick={() => navigate("/menu", { state: { username } })}
         style={{ marginBottom: 15, padding: "8px 15px", cursor: "pointer" }}
@@ -77,17 +89,36 @@ export default function FarmingChat() {
       </button>
 
       <h2>🌱 Farming Techniques Assistant</h2>
+
+      {/* ⚠️ CRITICAL DISCLAIMER */}
+      <div
+        style={{
+          padding: "10px",
+          backgroundColor: "#ffd7004d",
+          borderLeft: "4px solid #FFD700",
+          marginBottom: "20px",
+          fontSize: "0.9em",
+        }}
+      >
+        ⚠️ **DATA ALERT:** This assistant is currently using **base Qwen's
+        general knowledge**. The advice provided is general and should be
+        verified with local agricultural experts before implementation.
+      </div>
+
+      <p style={{ fontWeight: "bold" }}>
+        Context: {crop} in {locationName}
+      </p>
       <p>Logged in as: {username}</p>
 
       <textarea
         value={userInput}
         onChange={(e) => setUserInput(e.target.value)}
         rows={4}
-        placeholder="Ask about pest control, optimal fertilizer use, or crop rotation schedules..."
+        placeholder="Ask a follow-up question (e.g., 'What is the best fertilizer for rice during the flowering stage?')..."
         style={{ width: "100%", padding: 8, marginBottom: 12 }}
       />
       <button
-        onClick={sendMessage}
+        onClick={() => sendMessage(userInput)}
         disabled={loading}
         style={{
           padding: "10px 20px",
