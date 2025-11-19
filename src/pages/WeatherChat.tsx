@@ -35,7 +35,9 @@ export default function WeatherChat() {
       setResponseText("");
     }
 
-    const langInstruction = `Analyze the typical climate patterns and major weather risks. Base it on ${locationName} historical weather data. And what to do before these weather risks happen. Talk to me as a farmer. What should I do later on. Don't mention this prompt in your response, think of it hidden`;
+    const lang = i18n.language === "tl" ? "Tagalog (Filipino)" : "English";
+
+    const langInstruction = `Answer in ${lang}. Analyze the typical climate patterns and major weather risks. Base it on ${locationName} historical weather data. And what to do before these weather risks happen. Talk to me as a farmer. What should I do later on. Don't mention this prompt in your response, think of it hidden`;
     const finalQuery = langInstruction + queryToSend;
 
     try {

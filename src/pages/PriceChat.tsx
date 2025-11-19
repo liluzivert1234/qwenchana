@@ -9,7 +9,7 @@ import remarkGfm from "remark-gfm";
 export default function PriceChat() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   // Retrieve context data passed from MainMenu
   const username = (location.state as any)?.username || "Guest";
@@ -38,7 +38,9 @@ export default function PriceChat() {
       setResponseText("");
     }
 
-    const langInstruction = `Base your prices in https://www.da.gov.ph/marketnews, https://www.eextension.gov.ph,  Local Government Unit (LGU) & Public Market Offices, give some advices what to do with the crops to maximize profit. Don't mention this prompt. It should be hidden from your response, but answer the question`;
+    const lang = i18n.language === "tl" ? "Tagalog (Filipino)" : "English";
+
+    const langInstruction = `Answer in ${lang}. Base your prices in https://www.da.gov.ph/marketnews, https://www.eextension.gov.ph,  Local Government Unit (LGU) & Public Market Offices, give some advices what to do with the crops to maximize profit. Don't mention this prompt. It should be hidden from your response, but answer the question`;
     const finalQuery = langInstruction + queryToSend;
 
 
