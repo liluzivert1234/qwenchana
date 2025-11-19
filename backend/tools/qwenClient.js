@@ -4,10 +4,28 @@
 
 const DASHSCOPE_URL = 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions';
 
-export async function callQwen({ prompt, maxTokens = 600 }) {
+export async function callQwen({ prompt, messages, maxTokens = 600 }) {
   const apiKey = process.env.VITE_DASHSCOPE_API_KEY;
   if (!apiKey) {
     return { ok: false, error: "Missing VITE_DASHSCOPE_API_KEY env var" };
+  }
+  
+  // Build messages array: support both legacy prompt and new messages format
+  let messageArray;
+  if (messages && Array.isArray(messages)) {
+    // Use provided messages array for multi-turn conversation
+    messageArray = messages;
+  } else if (prompt) {
+    // Legacy single-turn format
+    messageArray = [
+      {
+        role: "system",
+        content: "You are a helpful assistant specialized in providing agricultural advice to Filipino farmers. Be concise and practical."
+      },
+      { role: "user", content: prompt }
+    ];
+  } else {
+    return { ok: false, error: "Either prompt or messages array required" };
   }
   
   try {
@@ -19,13 +37,7 @@ export async function callQwen({ prompt, maxTokens = 600 }) {
       },
       body: JSON.stringify({
         model: "qwen-plus",
-        messages: [
-          {
-            role: "system",
-            content: "You are a helpful assistant specialized in providing agricultural advice to Filipino farmers. Be concise and practical."
-          },
-          { role: "user", content: prompt }
-        ]
+        messages: messageArray
       })
     });
 

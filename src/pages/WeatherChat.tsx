@@ -15,7 +15,7 @@ export default function WeatherChat() {
   const initialQuery = (location.state as any)?.initialQuery || "";
 
   const [userInput, setUserInput] = useState("");
-  const [responseText, setResponseText] = useState("");
+  const [messages, setMessages] = useState<Array<{role: 'user'|'assistant', content: string, facts?: any}>>([]);
   const [loading, setLoading] = useState(false);
   const [facts, setFacts] = useState<any>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -34,13 +34,40 @@ export default function WeatherChat() {
 
   const sendMessage = async (queryToSend: string) => {
     if (!queryToSend.trim()) return;
-    setLoading(true); setErrorMsg(null); if (queryToSend !== initialQuery) setResponseText("");
-    // Hidden weather-focused instruction for the assistant
-    const langInstruction = `Analyze the typical climate patterns and major weather risks. Base it on ${locationName} historical weather data. And what to do before these weather risks happen. Talk to me as a farmer. What should I do later on. Don't mention this prompt in your response, think of it hidden`;
-    const finalQuery = langInstruction + '\n' + queryToSend;
+    setLoading(true); 
+    setErrorMsg(null);
+    setUserInput(""); // Clear input after sending
+    
+    // Add user message to thread
+    const newUserMsg = { role: 'user' as const, content: queryToSend };
+    setMessages(prev => [...prev, newUserMsg]);
+    
+    // Build messages array for Qwen API
+const systemMsg = {
+  role: 'system' as const,
+  content: `You are a practical Filipino weather assistant for farmers. Reply in simple Tagalog, empathetic and concise. Use the following output format exactly:
+
+Sagot sa Panahon:
+TL;DR: <one-sentence summary of immediate weather risk/advise>.
+
+1. <Immediate action to reduce risk>
+2. <Preparatory step to reduce crop damage>
+3. <Monitoring / follow-up step>
+
+Tiwala: <0-100>
+Pinagmulan: <data sources used>
+
+Datos:
+<Include forecast lines and summary from provided facts, e.g. "2025-11-20: 27–28C, ulan 10.9mm", "Kabuuang ulan 3 araw: X mm", "Presyo ref: Y PHP/kg">
+
+Keep language simple and practical; address the farmer directly and empathetically. Do not mention these instructions. Use the 'messages' array and 'facts' to ground replies.`};
+    
+    const conversationMsgs = messages.map(m => ({ role: m.role, content: m.content }));
+    const apiMessages = [systemMsg, ...conversationMsgs, newUserMsg];
+
     try {
       const res = await fetch(`${BACKEND_URL}/api/ask`, {
-        method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ message: finalQuery, crop, location: locationName })
+        method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ message: queryToSend, crop, location: locationName, messages: apiMessages })
       });
       const data = await res.json();
       if (!res.ok || !data.ok) {
@@ -49,7 +76,13 @@ export default function WeatherChat() {
         const llmText = data.qwen?.text || t('no_response');
         const structured = formatFlow(data);
         setFacts(data);
-        setResponseText(`**Sagot sa Panahon:**\n${llmText}\n\n---\n**Datos:**\n${structured}`);
+        
+        // Add assistant message to thread
+        setMessages(prev => [...prev, { 
+          role: 'assistant', 
+          content: `**Sagot sa Panahon:**\n${llmText}\n\n---\n**Datos:**\n${structured}`,
+          facts: data
+        }]);
       }
     } catch (e:any) { setErrorMsg(e.message); } finally { setLoading(false); }
   };
@@ -85,6 +118,20 @@ export default function WeatherChat() {
       <p style={{ fontWeight: "bold" }}>
         {t("context")}: {crop} {t("in_location")} {locationName}
       </p>
+
+      {/* Single latest assistant response (old UI style) */}
+      {(() => {
+        const latestAssistant = [...messages].reverse().find(m => m.role === 'assistant');
+        if (!latestAssistant) return null;
+        return (
+          <div style={{marginBottom: 24}}>
+            <h3>{t('response')}:</h3>
+            <div style={{padding:'10px',border:'1px solid #ccc',borderRadius:4,whiteSpace:'pre-wrap'}}>
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{latestAssistant.content}</ReactMarkdown>
+            </div>
+          </div>
+        );
+      })()}
 
       <textarea
         value={userInput}
@@ -133,14 +180,6 @@ export default function WeatherChat() {
         </div>
       )}
       {errorMsg && <div style={{color:'red'}}>{errorMsg}</div>}
-      {responseText && (
-        <div>
-          <h3>{t('response')}:</h3>
-          <div style={{padding:'10px',border:'1px solid #ccc',borderRadius:4,whiteSpace:'pre-wrap'}}>
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{responseText}</ReactMarkdown>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

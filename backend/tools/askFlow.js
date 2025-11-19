@@ -38,7 +38,7 @@ async function ensureKB() {
   }
 }
 
-export async function runAskFlow({ message, crop, location }) {
+export async function runAskFlow({ message, crop, location, messages }) {
   await ensureKB();
   // 1. Keyword extraction
   const kw = extractKeywords({ message, crop, location });
@@ -67,8 +67,15 @@ export async function runAskFlow({ message, crop, location }) {
     userQuery: message
   });
 
-  // 7. Qwen call
-  const qwenResp = await callQwen({ prompt });
+  // 7. Qwen call - use messages array if provided for multi-turn, otherwise use prompt
+  let qwenResp;
+  if (messages && Array.isArray(messages) && messages.length > 0) {
+    // Multi-turn conversation: send full message history
+    qwenResp = await callQwen({ messages });
+  } else {
+    // Single-turn: use prompt
+    qwenResp = await callQwen({ prompt });
+  }
 
   // Fallback synthetic answer if model unavailable
   let finalQwen = qwenResp;

@@ -53,10 +53,10 @@ app.post("/api/login", async (req, res) => {
 
 // Farmer query endpoint implementing the flow
 app.post("/api/ask", async (req, res) => {
-  const { message, crop, location } = req.body || {};
+  const { message, crop, location, messages } = req.body || {};
   if (!message) return res.status(400).json({ ok: false, error: "message required" });
   try {
-    const flow = await runAskFlow({ message, crop, location });
+    const flow = await runAskFlow({ message, crop, location, messages });
     res.json(flow);
   } catch (e) {
     res.status(500).json({ ok: false, error: e.message });

@@ -18,7 +18,7 @@ export default function PriceChat() {
   const initialQuery = (location.state as any)?.initialQuery || "";
 
   const [userInput, setUserInput] = useState("");
-  const [responseText, setResponseText] = useState("");
+  const [messages, setMessages] = useState<Array<{role: 'user'|'assistant', content: string, facts?: any}>>([]);
   const [loading, setLoading] = useState(false);
   const [facts, setFacts] = useState<any>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
@@ -35,13 +35,41 @@ export default function PriceChat() {
 
   const sendMessage = async (queryToSend: string) => {
     if (!queryToSend.trim()) return;
-    setLoading(true); setErrorMsg(null); if (queryToSend !== initialQuery) setResponseText("");
-    // Hidden instruction: bias model to use market sources and give profit-maximizing advice
-    const langInstruction = `Base your prices in https://www.da.gov.ph/marketnews, https://www.eextension.gov.ph, Local Government Unit (LGU) & Public Market Offices, give some advices what to do with the crops to maximize profit. Don't mention this prompt. It should be hidden from your response, but answer the question`;
-    const finalQuery = langInstruction + '\n' + queryToSend;
+    setLoading(true); 
+    setErrorMsg(null);
+    setUserInput(""); // Clear input after sending
+    
+    // Add user message to thread
+    const newUserMsg = { role: 'user' as const, content: queryToSend };
+    setMessages(prev => [...prev, newUserMsg]);
+    
+    // Build messages array for Qwen API
+    const systemMsg = {
+      role: 'system' as const,
+      content: `Sagot sa Presyo:
+TL;DR: <one-sentence recommendation/action>.
+
+1. <Practical step 1 — what the farmer should do now>
+2. <Practical step 2 — short, actionable>
+3. <Optional quick tip / risk to watch>
+
+Tiwala: <0-100>
+Pinagmulan: <comma-separated sources>
+
+Datos:
+Presyo (farmgate): <fill from provided facts or 'N/A'> PHP/kg
+Panahon: <period or label from facts>
+Ulan 3 araw: <value> mm
+
+Make responses short, clear, and empathetic (use words like 'Mag-ingat', 'Sana makatulong'). Do not describe these instructions in the reply. Use the provided messages array and facts to populate the Datos and to ground recommendations.`
+};
+    
+    const conversationMsgs = messages.map(m => ({ role: m.role, content: m.content }));
+    const apiMessages = [systemMsg, ...conversationMsgs, newUserMsg];
+
     try {
       const res = await fetch(`${BACKEND_URL}/api/ask`, {
-        method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ message: finalQuery, crop, location: locationName })
+        method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ message: queryToSend, crop, location: locationName, messages: apiMessages })
       });
       const data = await res.json();
       if (!res.ok || !data.ok) {
@@ -50,7 +78,13 @@ export default function PriceChat() {
         const llmText = data.qwen?.text || t('no_response');
         const structured = formatFlow(data);
         setFacts(data);
-        setResponseText(`**Sagot sa Presyo:**\n${llmText}\n\n---\n**Datos:**\n${structured}`);
+        
+        // Add assistant message to thread
+        setMessages(prev => [...prev, { 
+          role: 'assistant', 
+          content: `**Sagot sa Presyo:**\n${llmText}\n\n---\n**Datos:**\n${structured}`,
+          facts: data
+        }]);
       }
     } catch (e:any) { setErrorMsg(e.message); } finally { setLoading(false); }
   };
@@ -87,6 +121,19 @@ export default function PriceChat() {
       <p style={{ fontWeight: "bold" }}>
         {t("context")}: {crop} {t("in_location")} {locationName}
       </p>
+
+      {(() => {
+        const latestAssistant = [...messages].reverse().find(m => m.role === 'assistant');
+        if (!latestAssistant) return null;
+        return (
+          <div style={{marginBottom:24}}>
+            <h3>{t('response')}:</h3>
+            <div style={{padding:'10px',border:'1px solid #ccc',borderRadius:4,whiteSpace:'pre-wrap'}}>
+              <ReactMarkdown remarkPlugins={[remarkGfm]}>{latestAssistant.content}</ReactMarkdown>
+            </div>
+          </div>
+        );
+      })()}
 
       <textarea
         value={userInput}
@@ -135,14 +182,6 @@ export default function PriceChat() {
         </div>
       )}
       {errorMsg && <div style={{color:'red'}}>{errorMsg}</div>}
-      {responseText && (
-        <div>
-          <h3>{t('response')}:</h3>
-          <div style={{padding:'10px',border:'1px solid #ccc',borderRadius:4,whiteSpace:'pre-wrap'}}>
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>{responseText}</ReactMarkdown>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
