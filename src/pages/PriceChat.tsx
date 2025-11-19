@@ -2,12 +2,14 @@
 
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
 export default function PriceChat() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
 
   // Retrieve context data passed from MainMenu
   const username = (location.state as any)?.username || "Guest";
@@ -19,17 +21,19 @@ export default function PriceChat() {
   const [responseText, setResponseText] = useState("");
   const [loading, setLoading] = useState(false);
 
-  // NOTE: In a production app, the API call should be proxied through a secure backend (e.g., Function Compute)
   const DASHSCOPE_API_KEY = import.meta.env.VITE_DASHSCOPE_API_KEY;
 
   const sendMessage = async (queryToSend: string) => {
     if (!queryToSend.trim()) return;
 
     setLoading(true);
-    // Clear response for the new query only if it's a follow-up
     if (queryToSend !== initialQuery) {
       setResponseText("");
     }
+
+    const lang = i18n.language === "tl" ? "Tagalog (Filipino)" : "English";
+    const langInstruction = `Answer the entire request ENTIRELY in ${lang}. `;
+    const finalQuery = langInstruction + queryToSend;
 
     try {
       const res = await fetch(
@@ -43,12 +47,13 @@ export default function PriceChat() {
           body: JSON.stringify({
             model: "qwen-plus",
             messages: [
+              // System Prompt (Sets tone/format, remains language-neutral)
               {
                 role: "system",
                 content:
-                  "You are a helpful assistant specialized in providing general commodity price information and historical market context. **Be concise as possible.** ",
+                  "You are a helpful assistant specialized in providing general commodity price information and historical market context. Be concise as possible.",
               },
-              { role: "user", content: queryToSend },
+              { role: "user", content: finalQuery },
             ],
           }),
         }
@@ -57,13 +62,15 @@ export default function PriceChat() {
       const data = await res.json();
 
       if (res.ok) {
-        const reply = data.choices?.[0]?.message?.content || "No response.";
+        const reply = data.choices?.[0]?.message?.content || t("no_response");
         setResponseText(reply);
       } else {
-        setResponseText(`Error: ${data.error?.message || "Request failed"}`);
+        setResponseText(
+          `${t("error")}: ${data.error?.message || t("request_failed")}`
+        );
       }
     } catch (err: any) {
-      setResponseText("Error: " + err.message);
+      setResponseText(`${t("error")}: ${err.message}`);
     }
 
     setLoading(false);
@@ -89,12 +96,11 @@ export default function PriceChat() {
         onClick={() => navigate("/menu", { state: { username } })}
         style={{ marginBottom: 15, padding: "8px 15px", cursor: "pointer" }}
       >
-        ← Back to Main Menu
+        {t("back_to_menu")}
       </button>
 
-      <h2>💰 Crop Price Assistant</h2>
+      <h2>{t("price_chat_title")}</h2>
 
-      {/* ⚠️ CRITICAL DISCLAIMER */}
       <div
         style={{
           padding: "10px",
@@ -104,21 +110,21 @@ export default function PriceChat() {
           fontSize: "0.9em",
         }}
       >
-        ⚠️ **DATA ALERT:** This assistant is currently using **base Qwen's
-        general knowledge**. The price information provided is **NOT** from
-        real-time APIs and may be outdated.
+        {t("price_chat_disclaimer")}
       </div>
 
       <p style={{ fontWeight: "bold" }}>
-        Context: {crop} in {locationName}
+        {t("context")}: {crop} {t("in_location")} {locationName}
       </p>
-      <p>Logged in as: {username}</p>
+      <p>
+        {t("logged_in_as")}: {username}
+      </p>
 
       <textarea
         value={userInput}
         onChange={(e) => setUserInput(e.target.value)}
         rows={4}
-        placeholder="Ask a follow-up question (e.g., 'What factors affect corn prices?')..."
+        placeholder={t("price_chat_textarea")}
         style={{ width: "100%", padding: 8, marginBottom: 12 }}
       />
       <button
@@ -134,14 +140,22 @@ export default function PriceChat() {
           marginBottom: 20,
         }}
       >
-        {loading ? "Sending..." : "Send Message"}
+        {loading ? t("loading_sending") : t("button_send")}
       </button>
       {responseText && (
         <div>
-          <h3>Response:</h3>
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>
-            {responseText}
-          </ReactMarkdown>
+          <h3>{t("response")}:</h3>
+          <div
+            style={{
+              padding: "10px",
+              border: "1px solid #ccc",
+              borderRadius: 4,
+            }}
+          >
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              {responseText}
+            </ReactMarkdown>
+          </div>
         </div>
       )}
     </div>
