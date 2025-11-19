@@ -9,19 +9,16 @@ const menuItems = [
   {
     titleKey: "menu_prices",
     route: "/chat/price",
-    icon: "💰",
     initialQuery: "Current market price and historical trends for",
   },
   {
     titleKey: "menu_weather",
     route: "/chat/weather",
-    icon: "☀️",
     initialQuery: "Typical climate and major weather risks for",
   },
   {
     titleKey: "menu_farming",
     route: "/chat/farming",
-    icon: "🌱",
     initialQuery: "Best practice management advice for",
   },
 ];
@@ -68,7 +65,6 @@ export default function MainMenu() {
         textAlign: "center",
       }}
     >
-      {/* Language Toggle Button */}
       <button
         onClick={toggleLanguage}
         style={{
@@ -84,15 +80,12 @@ export default function MainMenu() {
         {i18n.language === "en" ? "Tagalog 🇵🇭" : "English 🇺🇸"}
       </button>
 
-      {/* APP TITLE */}
       <h1 style={{ color: "#4CAF50", fontSize: "3.5em", marginBottom: 10 }}>
-        PLANT HERO
+        Qwentory
       </h1>
 
-      {/* WELCOME MESSAGE */}
-      <h2>{t("welcome", { username })}</h2>
-
-      <p style={{ marginBottom: 30 }}>{t("instruction_crop_loc")}</p>
+  
+      <h2>{"Welcome, Farmer!"}</h2>
 
       <div
         style={{
@@ -130,7 +123,6 @@ export default function MainMenu() {
         />
       </div>
 
-      {/* Kiosk-style Grid Layout */}
       <div
         style={{
           display: "grid",
@@ -167,9 +159,6 @@ export default function MainMenu() {
               isFormComplete && (e.currentTarget.style.background = "#4CAF50")
             }
           >
-            <span style={{ fontSize: "3em", marginBottom: 10 }}>
-              {item.icon}
-            </span>
             {t(item.titleKey)}
           </div>
         ))}

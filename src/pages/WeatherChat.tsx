@@ -1,5 +1,3 @@
-// src/pages/WeatherChat.tsx
-
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -11,7 +9,6 @@ export default function WeatherChat() {
   const navigate = useNavigate();
   const { t, i18n } = useTranslation();
 
-  // Retrieve context data passed from MainMenu
   const username = (location.state as any)?.username || "Guest";
   const crop = (location.state as any)?.crop || "";
   const locationName = (location.state as any)?.location || "";
@@ -75,7 +72,6 @@ export default function WeatherChat() {
     setLoading(false);
   };
 
-  // Auto-submit initial query when component mounts
   useEffect(() => {
     if (initialQuery) {
       sendMessage(initialQuery);
@@ -114,9 +110,6 @@ export default function WeatherChat() {
 
       <p style={{ fontWeight: "bold" }}>
         {t("context")}: {crop} {t("in_location")} {locationName}
-      </p>
-      <p>
-        {t("logged_in_as")}: {username}
       </p>
 
       <textarea

@@ -116,9 +116,6 @@ export default function PriceChat() {
       <p style={{ fontWeight: "bold" }}>
         {t("context")}: {crop} {t("in_location")} {locationName}
       </p>
-      <p>
-        {t("logged_in_as")}: {username}
-      </p>
 
       <textarea
         value={userInput}

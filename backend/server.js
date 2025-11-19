@@ -33,5 +33,14 @@ app.post("/api/login", async (req, res) => {
   }
 });
 
+app.get("/api/prompts", async (req, res) => {
+  const { data, error } = await supabase
+    .from("prompts")
+    .select("*")
+    .order("created_at", { ascending: false });
+  if (error) return res.status(500).json({ error: error.message });
+  res.json(data);
+});
+
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));
