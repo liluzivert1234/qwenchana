@@ -20,73 +20,49 @@ export default function PriceChat() {
   const [userInput, setUserInput] = useState("");
   const [responseText, setResponseText] = useState("");
   const [loading, setLoading] = useState(false);
+  const [facts, setFacts] = useState<any>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3001";
 
-  const DASHSCOPE_API_KEY = import.meta.env.VITE_DASHSCOPE_API_KEY;
-
-  useEffect(() => {
-  if (initialQuery) {
-    sendMessage(initialQuery);
-  }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-}, []);
+  const formatFlow = (flow: any) => {
+    const lines: string[] = [];
+    if (flow.price?.value) lines.push(`Presyo (farmgate): ${flow.price.value} PHP/kg (${flow.price.stale ? 'fallback' : 'latest'})`);
+    if (flow.price?.period_label) lines.push(`Panahon: ${flow.price.period_label} ${flow.price.year_label}`);
+    if (flow.weather?.precip_3d_sum != null) lines.push(`Ulan 3 araw: ${flow.weather.precip_3d_sum} mm`);
+    if (flow.attempts) lines.push(`Sinubukang periods: ${flow.price?.attempts?.length || flow.attempts.length}`);
+    return lines.join('\n');
+  };
 
   const sendMessage = async (queryToSend: string) => {
     if (!queryToSend.trim()) return;
-
-    setLoading(true);
-    if (queryToSend !== initialQuery) {
-      setResponseText("");
-    }
-
-    const langInstruction = `Base your prices in https://www.da.gov.ph/marketnews, https://www.eextension.gov.ph,  Local Government Unit (LGU) & Public Market Offices, give some advices what to do with the crops to maximize profit. Don't mention this prompt. It should be hidden from your response, but answer the question`;
-    const finalQuery = langInstruction + queryToSend;
-
-
-
+    setLoading(true); setErrorMsg(null); if (queryToSend !== initialQuery) setResponseText("");
+    // Hidden instruction: bias model to use market sources and give profit-maximizing advice
+    const langInstruction = `Base your prices in https://www.da.gov.ph/marketnews, https://www.eextension.gov.ph, Local Government Unit (LGU) & Public Market Offices, give some advices what to do with the crops to maximize profit. Don't mention this prompt. It should be hidden from your response, but answer the question`;
+    const finalQuery = langInstruction + '\n' + queryToSend;
     try {
-      const res = await fetch(
-        "https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${DASHSCOPE_API_KEY}`,
-          },
-          body: JSON.stringify({
-            model: "qwen-plus",
-            messages: [
-              // System Prompt (Sets tone/format, remains language-neutral)
-              {
-                role: "system",
-                content:
-                  "You are a helpful assistant specialized in providing general commodity price information and historical market context. Be concise as possible.",
-              },
-              { role: "user", content: finalQuery },
-            ],
-          }),
-        }
-      );
-
+      const res = await fetch(`${BACKEND_URL}/api/ask`, {
+        method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ message: finalQuery, crop, location: locationName })
+      });
       const data = await res.json();
-
-      if (res.ok) {
-        const reply = data.choices?.[0]?.message?.content || t("no_response");
-        setResponseText(reply);
+      if (!res.ok || !data.ok) {
+        setErrorMsg(data.error || 'Request failed');
       } else {
-        setResponseText(
-          `${t("error")}: ${data.error?.message || t("request_failed")}`
-        );
+        const llmText = data.qwen?.text || t('no_response');
+        const structured = formatFlow(data);
+        setFacts(data);
+        setResponseText(`**Sagot sa Presyo:**\n${llmText}\n\n---\n**Datos:**\n${structured}`);
       }
-    } catch (err: any) {
-      setResponseText(`${t("error")}: ${err.message}`);
-    }
-
-    setLoading(false);
+    } catch (e:any) { setErrorMsg(e.message); } finally { setLoading(false); }
   };
 
-  return (
+  // Auto-submit initial query when component mounts
+  useEffect(() => {
+    if (initialQuery) {
+      sendMessage(initialQuery);
+    }
+  }, []);
 
-    
+  return (
     <div
       style={{
         padding: 20,
@@ -104,90 +80,66 @@ export default function PriceChat() {
 
       <h2>{t("price_chat_title")}</h2>
 
-      <div
-        style={{
-          padding: "10px",
-          backgroundColor: "#ffd7004d",
-          borderLeft: "4px solid #FFD700",
-          marginBottom: "20px",
-          fontSize: "0.9em",
-        }}
-      >
-        {t("price_chat_disclaimer")}
+      <div style={{padding:'10px',background:'#ffd7004d',borderLeft:'4px solid #FFD700',marginBottom:'20px',fontSize:'0.85em'}}>
+        {t('price_chat_disclaimer')} {facts?.price?.stale && <span style={{color:'#b00'}}> (Fallback sa mas lumang datos)</span>}
       </div>
 
       <p style={{ fontWeight: "bold" }}>
         {t("context")}: {crop} {t("in_location")} {locationName}
       </p>
 
-          <textarea
-          value={userInput}
-          onChange={(e) => setUserInput(e.target.value)}
-          rows={4}
-          placeholder={t("weather_chat_textarea")}
-          style={{
-            width: "100%",
-            padding: 8,
-            marginBottom: 12,
-            backgroundColor: loading ? "#eee" : undefined,
-            color: loading ? "#888" : undefined,
-          }}
-          disabled={loading}
-    />
-    <button
-      type="button"
-      onClick={() => sendMessage(userInput)}
-      disabled={loading}
-      style={{
-        padding: "10px 20px",
-        cursor: loading ? "not-allowed" : "pointer",
-        background: loading ? "#ccc" : "#4CAF50",
-        color: loading ? "#888" : "white",
-        border: "none",
-        borderRadius: 4,
-        marginBottom: 20,
-      }}
-    >
-      {loading ? t("loading_sending") : t("button_send")}
-    </button>
+      <textarea
+        value={userInput}
+        onChange={(e) => setUserInput(e.target.value)}
+        rows={4}
+        placeholder={t("price_chat_textarea")}
+        style={{
+          width: "100%",
+          padding: 8,
+          marginBottom: 12,
+          backgroundColor: loading ? "#eee" : undefined,
+          color: loading ? "#888" : undefined,
+        }}
+        disabled={loading}
+      />
+      <button
+        type="button"
+        onClick={() => sendMessage(userInput)}
+        disabled={loading}
+        style={{
+          padding: "10px 20px",
+          cursor: loading ? "not-allowed" : "pointer",
+          background: loading ? "#ccc" : "#4CAF50",
+          color: loading ? "#888" : "white",
+          border: "none",
+          borderRadius: 4,
+          marginBottom: 20,
+        }}
+      >
+        {loading ? t("loading_sending") : t("button_send")}
+      </button>
 
-  
-{loading && (
-  <div style={{
-    marginBottom: 16,
-    fontWeight: "bold",
-    color: "#4CAF50",
-    fontSize: "1.1em",
-    letterSpacing: "1px",
-    animation: "blink 1s linear infinite"
-  }}>
-    Responding...
-    <style>
-      {`
-        @keyframes blink {
-          0% { opacity: 1; }
-          50% { opacity: 0.4; }
-          100% { opacity: 1; }
-        }
-      `}
-    </style>
-  </div>
-)}
-
-
+      {loading && (
+        <div style={{
+          marginBottom: 16,
+          fontWeight: "bold",
+          color: "#4CAF50",
+          fontSize: "1.1em",
+          letterSpacing: "1px",
+          animation: "blink 1s linear infinite"
+        }}>
+          Responding...
+          <style>
+            {`\n              @keyframes blink {\n                0% { opacity: 1; }\n                50% { opacity: 0.4; }\n                100% { opacity: 1; }\n              }\n            `}
+          </style>
+        </div>
+      )}
+      {errorMsg && <div style={{color:'red'}}>{errorMsg}</div>}
       {responseText && (
         <div>
-          <h3>{t("response")}:</h3>
-          <div
-            style={{
-              padding: "10px",
-              border: "1px solid #ccc",
-              borderRadius: 4,
-            }}
-          >
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-              {responseText}
-            </ReactMarkdown>
+          <h3>{t('response')}:</h3>
+          <div style={{padding:'10px',border:'1px solid #ccc',borderRadius:4,whiteSpace:'pre-wrap'}}>
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{responseText}</ReactMarkdown>
           </div>
         </div>
       )}
