@@ -1,28 +1,45 @@
-// Qwen LLM client (placeholder)
-// Replace QWEN_API_URL and QWEN_API_KEY with actual Alibaba Cloud Model Studio endpoint credentials.
+// Dashscope (Alibaba Cloud) client for Qwen models
+// Uses Dashscope compatible-mode endpoint matching the working frontend implementation
+// Endpoint: https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions
+
+const DASHSCOPE_URL = 'https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions';
 
 export async function callQwen({ prompt, maxTokens = 600 }) {
-  if (!process.env.QWEN_API_URL || !process.env.QWEN_API_KEY) {
-    return { ok: false, error: "Missing QWEN_API_URL or QWEN_API_KEY env vars" };
+  const apiKey = process.env.VITE_DASHSCOPE_API_KEY;
+  if (!apiKey) {
+    return { ok: false, error: "Missing VITE_DASHSCOPE_API_KEY env var" };
   }
+  
   try {
-    const res = await fetch(process.env.QWEN_API_URL, {
+    const res = await fetch(DASHSCOPE_URL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        Authorization: `Bearer ${process.env.QWEN_API_KEY}`
+        "Authorization": `Bearer ${apiKey}`
       },
       body: JSON.stringify({
-        model: "qwen-max", // model name example; adjust to actual offering
-        input: prompt,
-        parameters: { max_tokens: maxTokens }
+        model: "qwen-plus",
+        messages: [
+          {
+            role: "system",
+            content: "You are a helpful assistant specialized in providing agricultural advice to Filipino farmers. Be concise and practical."
+          },
+          { role: "user", content: prompt }
+        ]
       })
     });
-    const json = await res.json();
-    // Adjust according to real response schema
-    const text = json.output?.text || json.choices?.[0]?.text || JSON.stringify(json);
-    return { ok: true, text, raw: json };
+
+    const data = await res.json();
+
+    if (res.ok) {
+      const text = data.choices?.[0]?.message?.content || '';
+      return { ok: true, text, raw: data };
+    } else {
+      console.error('Dashscope API error:', res.status, data);
+      return { ok: false, error: `HTTP ${res.status}: ${data.error?.message || 'Request failed'}`, raw: data };
+    }
   } catch (e) {
+    console.error('qwenClient call failed:', e.message);
     return { ok: false, error: e.message };
   }
 }

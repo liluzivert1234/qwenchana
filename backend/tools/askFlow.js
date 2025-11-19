@@ -11,7 +11,7 @@ import { fetchFarmgatePrice } from "./openstat.js";
 import { fetchWeather } from "./openmeteo.js";
 import { fetchTechniques } from "./supabaseTechniques.js";
 import { buildPrompt } from "./promptBuilder.js";
-import { searchKB, loadKB, buildLocalKB } from "./localKB.js";
+import { searchKB, loadKB, buildLocalKB } from "./localKb.js";
 import { callQwen } from "./qwenClient.js";
 
 // Simple location -> lat/lon mapping (placeholder). In production, use geocoding or a stored table.
