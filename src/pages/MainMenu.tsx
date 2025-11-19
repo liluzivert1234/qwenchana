@@ -1,28 +1,28 @@
 // src/pages/MainMenu.tsx
 
-import { useState } from "react"; // <-- Import useState
+import { useState } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 
 // Define the menu items
 const menuItems = [
-  // Prompting for general knowledge, not real-time data
   {
-    title: "Crop Prices",
+    titleKey: "menu_prices",
     route: "/chat/price",
     icon: "💰",
-    initialQuery: "Current market price and historical trends for ",
+    initialQuery: "Current market price and historical trends for",
   },
   {
-    title: "Weather Info",
+    titleKey: "menu_weather",
     route: "/chat/weather",
     icon: "☀️",
-    initialQuery: "Typical climate and major weather risks for ",
+    initialQuery: "Typical climate and major weather risks for",
   },
   {
-    title: "Farming Techniques",
+    titleKey: "menu_farming",
     route: "/chat/farming",
     icon: "🌱",
-    initialQuery: "Best practice management advice for ",
+    initialQuery: "Best practice management advice for",
   },
 ];
 
@@ -31,29 +31,31 @@ export default function MainMenu() {
   const location = useLocation();
   const username = (location.state as any)?.username || "Guest";
 
-  // 1. New state for Crop and Location inputs
+  const { t, i18n } = useTranslation();
+
   const [crop, setCrop] = useState("");
   const [locationInput, setLocationInput] = useState("");
-
-  // 3. Logic to check if both fields are complete
   const isFormComplete = crop.trim() !== "" && locationInput.trim() !== "";
 
   const handleMenuClick = (item: (typeof menuItems)[0]) => {
     if (!isFormComplete) return;
 
-    // Construct the context string and the initial, automated query
     const context = `${crop} in ${locationInput}`;
-    const fullInitialQuery = `${item.initialQuery}${context}?`;
+    const fullInitialQuery = `${item.initialQuery} ${context}?`;
 
-    // Navigate to the specific chat page, passing the full context and query
     navigate(item.route, {
       state: {
         username,
-        crop, // Pass the context data
+        crop,
         location: locationInput,
-        initialQuery: fullInitialQuery, // Pass the pre-constructed query
+        initialQuery: fullInitialQuery,
       },
     });
+  };
+
+  const toggleLanguage = () => {
+    const newLang = i18n.language === "en" ? "tl" : "en";
+    i18n.changeLanguage(newLang);
   };
 
   return (
@@ -66,23 +68,32 @@ export default function MainMenu() {
         textAlign: "center",
       }}
     >
-      {/* TEMP APP TITLE: PLANT HERO */}
-      <h1
+      {/* Language Toggle Button */}
+      <button
+        onClick={toggleLanguage}
         style={{
-          color: "#4CAF50",
-          fontSize: "3.5em",
-          marginBottom: 10,
+          position: "absolute",
+          top: 20,
+          right: 20,
+          padding: "8px 15px",
+          backgroundColor: "#333",
+          color: "white",
+          zIndex: 10,
         }}
       >
+        {i18n.language === "en" ? "Tagalog 🇵🇭" : "English 🇺🇸"}
+      </button>
+
+      {/* APP TITLE */}
+      <h1 style={{ color: "#4CAF50", fontSize: "3.5em", marginBottom: 10 }}>
         PLANT HERO
       </h1>
 
-      <h2>Welcome, {username}!</h2>
-      <p style={{ marginBottom: 30 }}>
-        Please define your **Crop** and **Location** to unlock the assistant.
-      </p>
+      {/* WELCOME MESSAGE */}
+      <h2>{t("welcome", { username })}</h2>
 
-      {/* 2. New Input Fields */}
+      <p style={{ marginBottom: 30 }}>{t("instruction_crop_loc")}</p>
+
       <div
         style={{
           display: "flex",
@@ -93,7 +104,7 @@ export default function MainMenu() {
       >
         <input
           type="text"
-          placeholder="Crop (e.g., Rice, Corn)"
+          placeholder={t("placeholder_crop")}
           value={crop}
           onChange={(e) => setCrop(e.target.value)}
           style={{
@@ -106,7 +117,7 @@ export default function MainMenu() {
         />
         <input
           type="text"
-          placeholder="Location (City/Province/Municipality)"
+          placeholder={t("placeholder_location")}
           value={locationInput}
           onChange={(e) => setLocationInput(e.target.value)}
           style={{
@@ -125,19 +136,18 @@ export default function MainMenu() {
           display: "grid",
           gridTemplateColumns: "repeat(3, 1fr)",
           gap: "20px",
-          opacity: isFormComplete ? 1 : 0.4, // Dim if not complete
-          pointerEvents: isFormComplete ? "auto" : "none", // Disable clicks if not complete
+          opacity: isFormComplete ? 1 : 0.4,
+          pointerEvents: isFormComplete ? "auto" : "none",
         }}
       >
         {menuItems.map((item) => (
           <div
             key={item.route}
-            // Pass the entire item object to handleMenuClick
             onClick={() => handleMenuClick(item)}
             style={{
               padding: "40px 20px",
               cursor: isFormComplete ? "pointer" : "not-allowed",
-              background: isFormComplete ? "#4CAF50" : "#A5A5A5", // Grey out if not complete
+              background: isFormComplete ? "#4CAF50" : "#A5A5A5",
               color: "white",
               border: "none",
               borderRadius: 8,
@@ -160,13 +170,13 @@ export default function MainMenu() {
             <span style={{ fontSize: "3em", marginBottom: 10 }}>
               {item.icon}
             </span>
-            {item.title}
+            {t(item.titleKey)}
           </div>
         ))}
       </div>
       {!isFormComplete && (
         <p style={{ color: "red", marginTop: "15px" }}>
-          Please fill in both **Crop** and **Location** to activate the tools.
+          {t("warning_complete_fields")}
         </p>
       )}
     </div>

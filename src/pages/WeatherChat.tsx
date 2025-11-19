@@ -2,12 +2,14 @@
 
 import { useState, useEffect } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
 export default function WeatherChat() {
   const location = useLocation();
   const navigate = useNavigate();
+  const { t, i18n } = useTranslation();
 
   // Retrieve context data passed from MainMenu
   const username = (location.state as any)?.username || "Guest";
@@ -29,6 +31,10 @@ export default function WeatherChat() {
       setResponseText("");
     }
 
+    const lang = i18n.language === "tl" ? "Tagalog (Filipino)" : "English";
+    const langInstruction = `Answer the entire request ENTIRELY in ${lang}. `;
+    const finalQuery = langInstruction + queryToSend;
+
     try {
       const res = await fetch(
         "https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions",
@@ -44,9 +50,9 @@ export default function WeatherChat() {
               {
                 role: "system",
                 content:
-                  "You are a helpful assistant specialized in describing historical climate patterns and typical weather risks for agriculture. **Be concise as possible.** ",
+                  "You are a helpful assistant specialized in describing historical climate patterns and typical weather risks for agriculture. Be concise as possible.",
               },
-              { role: "user", content: queryToSend },
+              { role: "user", content: finalQuery },
             ],
           }),
         }
@@ -55,13 +61,15 @@ export default function WeatherChat() {
       const data = await res.json();
 
       if (res.ok) {
-        const reply = data.choices?.[0]?.message?.content || "No response.";
+        const reply = data.choices?.[0]?.message?.content || t("no_response");
         setResponseText(reply);
       } else {
-        setResponseText(`Error: ${data.error?.message || "Request failed"}`);
+        setResponseText(
+          `${t("error")}: ${data.error?.message || t("request_failed")}`
+        );
       }
     } catch (err: any) {
-      setResponseText("Error: " + err.message);
+      setResponseText(`${t("error")}: ${err.message}`);
     }
 
     setLoading(false);
@@ -87,12 +95,11 @@ export default function WeatherChat() {
         onClick={() => navigate("/menu", { state: { username } })}
         style={{ marginBottom: 15, padding: "8px 15px", cursor: "pointer" }}
       >
-        ← Back to Main Menu
+        {t("back_to_menu")}
       </button>
 
-      <h2>☀️ Weather Assistant</h2>
+      <h2>{t("weather_chat_title")}</h2>
 
-      {/* ⚠️ CRITICAL DISCLAIMER */}
       <div
         style={{
           padding: "10px",
@@ -102,22 +109,21 @@ export default function WeatherChat() {
           fontSize: "0.9em",
         }}
       >
-        ⚠️ **DATA ALERT:** This assistant is currently using **base Qwen's
-        general knowledge**. The weather information provided is **NOT** from
-        real-time APIs and reflects historical/typical climate, not the current
-        forecast.
+        {t("weather_chat_disclaimer")}
       </div>
 
       <p style={{ fontWeight: "bold" }}>
-        Context: {crop} in {locationName}
+        {t("context")}: {crop} {t("in_location")} {locationName}
       </p>
-      <p>Logged in as: {username}</p>
+      <p>
+        {t("logged_in_as")}: {username}
+      </p>
 
       <textarea
         value={userInput}
         onChange={(e) => setUserInput(e.target.value)}
         rows={4}
-        placeholder="Ask a follow-up question (e.g., 'What is the risk of frost in this area?')..."
+        placeholder={t("weather_chat_textarea")}
         style={{ width: "100%", padding: 8, marginBottom: 12 }}
       />
       <button
@@ -133,14 +139,22 @@ export default function WeatherChat() {
           marginBottom: 20,
         }}
       >
-        {loading ? "Sending..." : "Send Message"}
+        {loading ? t("loading_sending") : t("button_send")}
       </button>
       {responseText && (
         <div>
-          <h3>Response:</h3>
-          <ReactMarkdown remarkPlugins={[remarkGfm]}>
-            {responseText}
-          </ReactMarkdown>
+          <h3>{t("response")}:</h3>
+          <div
+            style={{
+              padding: "10px",
+              border: "1px solid #ccc",
+              borderRadius: 4,
+            }}
+          >
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+              {responseText}
+            </ReactMarkdown>
+          </div>
         </div>
       )}
     </div>
