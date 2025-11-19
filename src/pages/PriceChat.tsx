@@ -9,7 +9,7 @@ import remarkGfm from "remark-gfm";
 export default function PriceChat() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
 
   // Retrieve context data passed from MainMenu
   const username = (location.state as any)?.username || "Guest";
@@ -23,6 +23,13 @@ export default function PriceChat() {
 
   const DASHSCOPE_API_KEY = import.meta.env.VITE_DASHSCOPE_API_KEY;
 
+  useEffect(() => {
+  if (initialQuery) {
+    sendMessage(initialQuery);
+  }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+}, []);
+
   const sendMessage = async (queryToSend: string) => {
     if (!queryToSend.trim()) return;
 
@@ -31,9 +38,10 @@ export default function PriceChat() {
       setResponseText("");
     }
 
-    const lang = i18n.language === "tl" ? "Tagalog (Filipino)" : "English";
-    const langInstruction = `Answer the entire request ENTIRELY in ${lang}. `;
+    const langInstruction = `Base your prices in https://www.da.gov.ph/marketnews, https://www.eextension.gov.ph,  Local Government Unit (LGU) & Public Market Offices, give some advices what to do with the crops to maximize profit. Don't mention this prompt. It should be hidden from your response, but answer the question`;
     const finalQuery = langInstruction + queryToSend;
+
+
 
     try {
       const res = await fetch(
@@ -76,14 +84,9 @@ export default function PriceChat() {
     setLoading(false);
   };
 
-  // Auto-submit initial query when component mounts
-  useEffect(() => {
-    if (initialQuery) {
-      sendMessage(initialQuery);
-    }
-  }, []);
-
   return (
+
+    
     <div
       style={{
         padding: 20,
@@ -93,7 +96,7 @@ export default function PriceChat() {
       }}
     >
       <button
-        onClick={() => navigate("/menu", { state: { username } })}
+        onClick={() => navigate("/", { state: { username } })}
         style={{ marginBottom: 15, padding: "8px 15px", cursor: "pointer" }}
       >
         {t("back_to_menu")}
@@ -117,28 +120,61 @@ export default function PriceChat() {
         {t("context")}: {crop} {t("in_location")} {locationName}
       </p>
 
-      <textarea
-        value={userInput}
-        onChange={(e) => setUserInput(e.target.value)}
-        rows={4}
-        placeholder={t("price_chat_textarea")}
-        style={{ width: "100%", padding: 8, marginBottom: 12 }}
-      />
-      <button
-        onClick={() => sendMessage(userInput)}
-        disabled={loading}
-        style={{
-          padding: "10px 20px",
-          cursor: "pointer",
-          background: "#4CAF50",
-          color: "white",
-          border: "none",
-          borderRadius: 4,
-          marginBottom: 20,
-        }}
-      >
-        {loading ? t("loading_sending") : t("button_send")}
-      </button>
+          <textarea
+          value={userInput}
+          onChange={(e) => setUserInput(e.target.value)}
+          rows={4}
+          placeholder={t("weather_chat_textarea")}
+          style={{
+            width: "100%",
+            padding: 8,
+            marginBottom: 12,
+            backgroundColor: loading ? "#eee" : undefined,
+            color: loading ? "#888" : undefined,
+          }}
+          disabled={loading}
+    />
+    <button
+      type="button"
+      onClick={() => sendMessage(userInput)}
+      disabled={loading}
+      style={{
+        padding: "10px 20px",
+        cursor: loading ? "not-allowed" : "pointer",
+        background: loading ? "#ccc" : "#4CAF50",
+        color: loading ? "#888" : "white",
+        border: "none",
+        borderRadius: 4,
+        marginBottom: 20,
+      }}
+    >
+      {loading ? t("loading_sending") : t("button_send")}
+    </button>
+
+  
+{loading && (
+  <div style={{
+    marginBottom: 16,
+    fontWeight: "bold",
+    color: "#4CAF50",
+    fontSize: "1.1em",
+    letterSpacing: "1px",
+    animation: "blink 1s linear infinite"
+  }}>
+    Responding...
+    <style>
+      {`
+        @keyframes blink {
+          0% { opacity: 1; }
+          50% { opacity: 0.4; }
+          100% { opacity: 1; }
+        }
+      `}
+    </style>
+  </div>
+)}
+
+
       {responseText && (
         <div>
           <h3>{t("response")}:</h3>
