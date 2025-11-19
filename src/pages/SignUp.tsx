@@ -1,18 +1,19 @@
 import React, { useState } from "react";
-import { useNavigate, Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import logo from "../assets/Logo.png";
 import Input from "../components/General/Input";
 import Button from "../components/General/Button";
 import { Heading } from "../components/General/Heading";
-import { useAuth } from "../lib/db/db.auth";
-import Toast from "../components/General/Toast"; // Adjust path if needed
+import { supabase, useAuth } from "../lib/db/db.auth";
+import Toast from "../components/General/Toast"; // adjust import path if needed
 
-function Login() {
-  const navigate = useNavigate();
-  const { login, loggingIn } = useAuth();
-
+function SignUp() {
+  const { register, registering } = useAuth();
   const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const navigate = useNavigate();
 
   // Toast state
   const [toastMessage, setToastMessage] = useState("");
@@ -28,27 +29,56 @@ function Login() {
     setShowToast(true);
   };
 
-  const handleLogin: React.FormEventHandler<HTMLFormElement> = async (
-    event
-  ) => {
-    event.preventDefault();
-
-    // Input validation
+  const handleSignUp = async () => {
     if (!username.trim()) return triggerToast("Username is required.", "error");
     if (username.trim().length < 3) return triggerToast("Username must be at least 3 characters long.", "error");
     if (username.trim().length > 50) return triggerToast("Username must be at most 50 characters long.", "error");
     if (!password.trim()) return triggerToast("Password is required.", "error");
-    if (password.trim().length < 6) return triggerToast("Password must be at least 6 characters long.", "error");
-    if (password.trim().length > 128) return triggerToast("Password must be at most 128 characters long.", "error");
+    if (password.trim().length < 6)
+      return triggerToast(
+        "Password is too short (min. 6 characters).",
+        "error"
+      );
+    if (password.trim().length > 128) return triggerToast("Password is too long (max. 128 characters).", "error");
+    if (!confirmPassword.trim())
+      return triggerToast("Confirm Password is required.", "error");
+    if (password.trim() !== confirmPassword.trim())
+      return triggerToast("Password does not match confirmation.", "error");
 
-    const success = await login(username, password);
-    if (!success) {
-      triggerToast("Login failed. Please check your credentials.", "error");
-      return;
+    const email = `${username}@gabay.org`;
+
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            full_name: username,
+            // is_admin: is_admin
+          }
+        }
+      });
+
+      if (data && !error) {
+        triggerToast("Successfully registered account!", "success");
+        setTimeout(() => navigate("/vrnqxh6p2dj722u7/login"), 1500); // delay navigation to let toast show
+      } else if (error) {
+        triggerToast(error.message, "error");
+      }
+    } catch (err: any) {
+      triggerToast("Registration failed. Please try again.", "error");
     }
 
-    triggerToast("Login successful!", "success");
-    setTimeout(() => navigate("/dashboard"), 1500);
+    //   const success = await register(username, password, false);
+    //   if (success) {
+    //     triggerToast("Successfully registered account!", "success");
+    //     setTimeout(() => navigate("/vrnqxh6p2dj722u7/login"), 1500); // delay navigation to let toast show
+    //   } else {
+    //     triggerToast("Username already exists. Please choose a different username.", "error");
+    //   }
+    // } catch (err: any) {
+    //   triggerToast("Registration failed. Please try again.", "error");
+    // }
   };
 
   return (
@@ -61,10 +91,7 @@ function Login() {
           </Heading>
         </div>
 
-        <form
-          onSubmit={handleLogin}
-          className="flex flex-col items-center justify-center gap-10 mt-8 w-full"
-        >
+        <form className="flex flex-col items-center justify-center gap-6 mt-8 w-full">
           <Input
             id="username"
             placeholder="Username"
@@ -86,24 +113,36 @@ function Login() {
             onChange={(e) => setPassword(e.target.value)}
           />
 
+          <Input
+            id="confirm-password"
+            type="password"
+            placeholder="Confirm Password"
+            size="custom"
+            className="w-[550px] max-w-full h-12"
+            inputClassName="w-full h-full border-border bg-main"
+            value={confirmPassword}
+            onChange={(e) => setConfirmPassword(e.target.value)}
+          />
+
           <Button
-            type="submit"
+            type="button"
             size="sm"
             className="w-[550px] max-w-full"
-            disabled={loggingIn}
+            disabled={registering}
+            onClick={handleSignUp}
           >
-            {loggingIn ? "Logging in..." : "Login"}
+            {registering ? "Signing up..." : "Sign Up"}
           </Button>
         </form>
 
         <div className="mt-8">
           <p className="text-sm font-Work-Sans text-center">
-            Don&apos;t have an account?{" "}
+            Already have an account?{" "}
             <Link
-              to="/d5mf7868y97mpwa9/sign-up"
+              to="/vrnqxh6p2dj722u7/login"
               className="text-primary hover:underline cursor-pointer"
             >
-              Sign up.
+              Log in.
             </Link>
           </p>
         </div>
@@ -123,4 +162,4 @@ function Login() {
   );
 }
 
-export default Login;
+export default SignUp;

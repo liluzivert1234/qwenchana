@@ -11,7 +11,6 @@ node_modules
 dist
 dist-ssr
 *.local
-.env
 
 # Editor directories and files
 .vscode/*
@@ -23,6 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
-.env
-.gitignore
 
+# VS Code settings
+.vscode/
+.env
+.vercel
