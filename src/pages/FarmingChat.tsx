@@ -7,7 +7,7 @@ import remarkGfm from "remark-gfm";
 export default function FarmingChat() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
 
   const username = (location.state as any)?.username || "Guest";
   const crop = (location.state as any)?.crop || "";
@@ -17,59 +17,49 @@ export default function FarmingChat() {
   const [userInput, setUserInput] = useState("");
   const [responseText, setResponseText] = useState("");
   const [loading, setLoading] = useState(false);
+  const [facts, setFacts] = useState<any>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || "http://localhost:3001";
 
-  const DASHSCOPE_API_KEY = import.meta.env.VITE_DASHSCOPE_API_KEY;
+  const formatFlow = (flow: any) => {
+    const lines: string[] = [];
+    if (flow.price?.value) {
+      lines.push(`Presyo (farmgate): ${flow.price.value} PHP/kg (${flow.price.stale ? 'posibleng luma' : 'sariwa'})`);
+    }
+    if (flow.weather?.precip_3d_sum != null) {
+      lines.push(`Ulan (3 araw): ${flow.weather.precip_3d_sum} mm`);
+    }
+    if (flow.kb && flow.kb.length) {
+      lines.push(`KB sanggunian: ${flow.kb.map((k: any) => k.source).join(', ')}`);
+    }
+    return lines.join('\n');
+  };
 
   const sendMessage = async (queryToSend: string) => {
     if (!queryToSend.trim()) return;
-
     setLoading(true);
-    if (queryToSend !== initialQuery) {
-      setResponseText("");
-    }
-
-    const lang = i18n.language === "tl" ? "Tagalog (Filipino)" : "English";
-    const langInstruction = `Answer the entire request ENTIRELY in ${lang}. `;
-    const finalQuery = langInstruction + queryToSend;
-
+    setErrorMsg(null);
+    if (queryToSend !== initialQuery) setResponseText("");
     try {
-      const res = await fetch(
-        "https://dashscope-intl.aliyuncs.com/compatible-mode/v1/chat/completions",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${DASHSCOPE_API_KEY}`,
-          },
-          body: JSON.stringify({
-            model: "qwen-plus",
-            messages: [
-              {
-                role: "system",
-                content:
-                  "You are a highly knowledgeable agricultural extension expert. Be concise as possible while providing detailed general advice on crop management, planting, fertilization, and pest management.",
-              },
-              { role: "user", content: finalQuery },
-            ],
-          }),
-        }
-      );
-
+      const res = await fetch(`${BACKEND_URL}/api/ask`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: queryToSend, crop, location: locationName })
+      });
       const data = await res.json();
-
-      if (res.ok) {
-        const reply = data.choices?.[0]?.message?.content || t("no_response");
-        setResponseText(reply);
+      if (!res.ok || !data.ok) {
+        setErrorMsg(data.error || 'Request failed');
       } else {
-        setResponseText(
-          `${t("error")}: ${data.error?.message || t("request_failed")}`
-        );
+        const llmText = data.qwen?.text || t('no_response');
+        const structured = formatFlow(data);
+        setFacts(data);
+        setResponseText(`**Sagot:**\n${llmText}\n\n---\n**Datos:**\n${structured}`);
       }
-    } catch (err: any) {
-      setResponseText(`${t("error")}: ${err.message}`);
+    } catch (e:any) {
+      setErrorMsg(e.message);
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   useEffect(() => {
@@ -88,7 +78,7 @@ export default function FarmingChat() {
       }}
     >
       <button
-        onClick={() => navigate("/menu", { state: { username } })}
+        onClick={() => navigate("/", { state: { username } })}
         style={{ marginBottom: 15, padding: "8px 15px", cursor: "pointer" }}
       >
         {t("back_to_menu")}
@@ -96,16 +86,9 @@ export default function FarmingChat() {
 
       <h2>{t("farming_chat_title")}</h2>
 
-      <div
-        style={{
-          padding: "10px",
-          backgroundColor: "#ffd7004d",
-          borderLeft: "4px solid #FFD700",
-          marginBottom: "20px",
-          fontSize: "0.9em",
-        }}
-      >
-        {t("farming_chat_disclaimer")}
+      <div style={{padding:'10px',background:'#ffd7004d',borderLeft:'4px solid #FFD700',marginBottom:'20px',fontSize:'0.85em'}}>
+        {t('farming_chat_disclaimer')}<br/>
+        {facts?.price?.stale && <span style={{color:'#b00'}}>Babala: Maaaring luma ang presyo, fallback sa nakaraang taon.</span>}
       </div>
 
       <p style={{ fontWeight: "bold" }}>
@@ -134,19 +117,12 @@ export default function FarmingChat() {
       >
         {loading ? t("loading_sending") : t("button_send")}
       </button>
+      {errorMsg && <div style={{color:'red'}}>{errorMsg}</div>}
       {responseText && (
         <div>
-          <h3>{t("response")}:</h3>
-          <div
-            style={{
-              padding: "10px",
-              border: "1px solid #ccc",
-              borderRadius: 4,
-            }}
-          >
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-              {responseText}
-            </ReactMarkdown>
+          <h3>{t('response')}:</h3>
+          <div style={{padding:'10px',border:'1px solid #ccc',borderRadius:4,whiteSpace:'pre-wrap'}}>
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{responseText}</ReactMarkdown>
           </div>
         </div>
       )}

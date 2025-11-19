@@ -1,0 +1,125 @@
+
+
+
+
+
+what ai product can i make for a hackathon that uses empathetic technology or empathetic system
+
+
+that can be used for 
+
+1. workforce development
+truth and digital literacy
+govtech & public service
+sustainable agritech
+You said:
+We are going to be using the Alibaba Cloud AI services (Qwen, PAI, etc) as a tech stack. Utilize the alibaba cloud tech stack.
+
+
+I want to know the feasibility and success of the following ideas, and they need to stand out from regular real-existing technologies. For instance, we initially thought of an AI digital literacy tutor that would conceptually streamline and invalidate the coursera / skillshare / masterclass courses and deliver a lesson-based tutorial architecture. However, can you help us conceptualize further and also align it in terms of the four possible problem statements
+You said:
+im thinking of this final idea
+
+
+Final Thrusts: 
+Weather
+Financial Market
+Farming Practices
+
+Location
+Weather 
+API: https://open-meteo.com/?utm_source=chatgpt.com
+
+
+Crops to work with
+
+
+FEATURES
+1. Empathic Q&A Chat
+Farmer asks: “Kailan mag-anib ng palay?” → AI responds with weather-aware, simple advice in warm Tagalog
+2. Daily “Price Updates” & Budgeter
+Auto-generated digest: *“Ngayon sa [Province]: Presyo ng palay = ₱22/kg
+3. Practice Explainer Breaks down techniques:
+“Paano gumawa ng compost?” → step-by-step with analogies 
+4. Hyperlocal Tips
+“8 farmers in Tarlac used rice-duck farming — 6 reported mas mababa gastusin”
+
+
+
+- pain points of the issue
+- Farmers lack access to timely, relevant, actionable agritech knowledge and  much of it is in English, too technical, or assumes access to modern farming technology, most of which are unavailable to Philippine farmers.
+- solution (features?)
+1. Empathic Chat Interface 
+2. Simple Explainer
+3. Hyper localized information from similar farmers (rice farmers from Nueva Ecija)
+4. Bringing somewhat timely information to farmers (state of Market or incoming Weather)
+- how it works
+- front end 
+- back end
+- database
+- ui/ux
+- impact / alignment with the theme
+	- Sustainable: Promotes sustainable, modern, and often more 
+- AI-Driven: Fine-tuned LLM + computer vision, not just static content
+- Farmer-Centered
+- why this matters / significance
+- Philippines loses ₱100B+ yearly to crop pests & poor practices — not from lack of knowledge,	
+but lack of accessible, trusted guidance.
+
+You said:
+whats a funnycompany name
+
+
+that is a merge of the concept and "Chongke" (weed, because this is about farming)
+You said:
+What available location-based api can we use in our project 
+You said:
+any free option?
+
+Our plan is to consolidate location-based data and economic data for farmers and give them topographical, weather-based, and economical data for their farming needs. essentially functioning as a kiosk at a local barangay or local government unit building, where they can query (high-level abstraction) information that they NEED and would definitely benefit knowing for their farming and economic needs. essentially it is an information-backed agricultural assistant that gives effective suggestions on strategic farming decisions in their daily lives
+You said:
+I am going to be using the Philippine Statistics Authority OpenSTAT API. However, how will I exactly use this with my chatbot running on Qwen from Alibaba Cloud? How can I inject data from OpenSTAT updated daily, into the model? Prompt engineering? How 
+
+
+
+
+OpenSTAT Philippine Statistics Authority Database
+Database highlights statistics generated and compiled by the Philippine Statistics Authority (PSA) at national and sub-national levels. Data is summarized/aggregated and organized into major domains.
+
+Indexed
+General
+Property	Value
+Link	https://openstat.psa.gov.ph/database
+Status	active
+Catalog type	Indicators catalog
+Owner name	Philippine Statistics Authority
+Owner type	Central government
+Owner link	https://www.psa.gov.ph
+Owner location	Phillipines
+Software	pxweb (PxWeb)
+Tags	statistics, government, official statistics, open data, agriculture, demographics, economics, environment, metadata
+Access modes	open
+Content types	indicator
+API Status	uncertain
+Coverage
+Code	Name
+PH	Phillipines
+Languages
+Code	Name
+EN	English
+API Endpoints
+Type	URL
+pxwebapi	https://openstat.psa.gov.ph:443/PXWeb/api/v1/en
+Download
+Download the data on this page in JSON format.
+
+Feedback
+If you notice any errors or missing data catalogs, please contact us at dateno@dateno.io or open an issue on GitHub. We will address it as soon as possible.
+
+
+You said:
+can i do it using supabase instead of a vector db?
+You said:
+how do we inject it into prompt context?
+You said:
+give me a full flow
