@@ -32,6 +32,10 @@ export default function FarmingChat() {
     if (flow.kb && flow.kb.length) {
       lines.push(`KB sanggunian: ${flow.kb.map((k: any) => k.source).join(', ')}`);
     }
+    if (flow.techniques?.techniques?.length) {
+      const sampleTitles = flow.techniques.techniques.slice(0,2).map((t: any) => t.title.replace(/\n+/g,' ').slice(0,70));
+      lines.push(`Mga teknik (${flow.techniques.source}): ${sampleTitles.join('; ')}`);
+    }
     return lines.join('\n');
   };
 

@@ -23,7 +23,7 @@ export function buildPrompt({ crop, location, priceData, weatherData, techniques
 
   return `Ikaw ay isang maunawaing AI na tumutulong sa magsasaka. Sumagot sa mainit at malinaw na Tagalog.
 Gumawa ng maikling TL;DR (1 pangungusap), pagkatapos ay 3 numbered na hakbang na praktikal.
-Ipakita sa dulo ang 'Tiwala:' (estimate 0-100) at banggitin ang pinagmulan: PSA OpenSTAT, Open-Meteo, Supabase.
+Ipakita sa dulo ang 'Tiwala:' (estimate 0-100) at banggitin ang pinagmulan: PSA OpenSTAT, Open-Meteo, Local PDF Guides.
 
 KONTEKSTO:\n${contextBlock}\n\nTanong ng magsasaka: ${userQuery}\n\nSagutan ngayon:`;
 }

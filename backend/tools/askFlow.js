@@ -9,7 +9,8 @@
 import { extractKeywords } from "./keyword.js";
 import { fetchFarmgatePrice } from "./openstat.js";
 import { fetchWeather } from "./openmeteo.js";
-import { fetchTechniques } from "./supabaseTechniques.js";
+// Replaced Supabase techniques with local PDF-derived techniques
+import { fetchLocalPdfTechniques } from "./localTechniques.js";
 import { buildPrompt } from "./promptBuilder.js";
 import { searchKB, loadKB, buildLocalKB } from "./localKb.js";
 import { callQwen } from "./qwenClient.js";
@@ -49,8 +50,8 @@ export async function runAskFlow({ message, crop, location }) {
   const { lat, lon } = resolveCoords(kw.location || "philippines");
   const weatherData = await fetchWeather({ lat, lon });
 
-  // 4. Techniques
-  const techniquesData = await fetchTechniques({ crop: kw.crop || "rice" });
+  // 4. Techniques (local PDF extraction)
+  const techniquesData = fetchLocalPdfTechniques({ crop: kw.crop || "rice" });
 
   // 5. KB retrieval (top chunks)
   const kbChunks = searchKB({ query: message, crop: kw.crop, topK: 3 });
