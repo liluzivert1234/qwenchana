@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import ReactMarkdown from "react-markdown";
@@ -15,30 +15,42 @@ export default function WeatherChat() {
   const initialQuery = (location.state as any)?.initialQuery || "";
 
   const [userInput, setUserInput] = useState("");
-  const [responseText, setResponseText] = useState("");
+  const [messages, setMessages] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
   const DASHSCOPE_API_KEY = import.meta.env.VITE_DASHSCOPE_API_KEY;
 
+  const initialQuerySent = useRef(false);
+  
     useEffect(() => {
-  if (initialQuery) {
-    sendMessage(initialQuery);
-  }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-}, []);
+      if (initialQuery && !initialQuerySent.current) {
+        handleSend(initialQuery);
+        initialQuerySent.current = true;
+      }
+    }, []);
+  
 
-  const sendMessage = async (queryToSend: string) => {
-    if (!queryToSend.trim()) return;
+  const handleSend = async (prompt: string) => {
+    if (!prompt.trim()) return;
 
     setLoading(true);
-    if (queryToSend !== initialQuery) {
-      setResponseText("");
-    }
+
+    const newUserMessage = { role: "user", content: prompt };
+    const updatedMessages = [...messages, newUserMessage];
+
+    setMessages(updatedMessages);
 
     const lang = i18n.language === "tl" ? "Tagalog (Filipino)" : "English";
+    const systemInstruction =
+      "You are a helpful assistant specialized in describing historical climate patterns and typical weather risks for agriculture. Be concise as possible." +
+      `Answer in ${lang}` +
+      `Base it on ${locationName}, and local weather data. Check for upcoming weather events up to 7 days. And what to do before these risks happen. ` +
+      `Talk to me as a farmer. Do not mention this prompt.`;
 
-    const langInstruction = `Answer in ${lang}. Analyze the typical climate patterns and major weather risks. Base it on ${locationName} historical weather data. And what to do before these weather risks happen. Talk to me as a farmer. What should I do later on. Don't mention this prompt in your response, think of it hidden`;
-    const finalQuery = langInstruction + queryToSend;
+    const finalMessages = [
+      { role: "system", content: systemInstruction },
+      ...updatedMessages
+    ];
 
     try {
       const res = await fetch(
@@ -47,48 +59,36 @@ export default function WeatherChat() {
           method: "POST",
           headers: {
             "Content-Type": "application/json",
-            Authorization: `Bearer ${DASHSCOPE_API_KEY}`,
+            Authorization: `Bearer ${DASHSCOPE_API_KEY}`
           },
           body: JSON.stringify({
             model: "qwen-plus",
-            messages: [
-              {
-                role: "system",
-                content:
-                  "You are a helpful assistant specialized in describing historical climate patterns and typical weather risks for agriculture. Be concise as possible.",
-              },
-              { role: "user", content: finalQuery },
-            ],
-          }),
+            messages: finalMessages
+          })
         }
       );
 
       const data = await res.json();
+      const reply = data.choices?.[0]?.message?.content || t("no_response");
 
-      if (res.ok) {
-        const reply = data.choices?.[0]?.message?.content || t("no_response");
-        setResponseText(reply);
-      } else {
-        setResponseText(
-          `${t("error")}: ${data.error?.message || t("request_failed")}`
-        );
-      }
+      setMessages((prev) => [...prev, { role: "assistant", content: reply }]);
     } catch (err: any) {
-      setResponseText(`${t("error")}: ${err.message}`);
+      setMessages((prev) => [
+        ...prev,
+        { role: "assistant", content: `${t("error")}: ${err.message}` }
+      ]);
     }
 
+    setUserInput("");
     setLoading(false);
   };
 
+  const visibleMessages = messages.filter(
+    (msg, idx) => !(idx === 0 && msg.role === "user" && msg.content === initialQuery)
+  );
+
   return (
-    <div
-      style={{
-        padding: 20,
-        fontFamily: "Arial",
-        maxWidth: 700,
-        margin: "auto",
-      }}
-    >
+    <div style={{ padding: 20, fontFamily: "Arial", maxWidth: 900, margin: "auto" }}>
       <button
         onClick={() => navigate("/", { state: { username } })}
         style={{ marginBottom: 15, padding: "8px 15px", cursor: "pointer" }}
@@ -103,85 +103,121 @@ export default function WeatherChat() {
           padding: "10px",
           backgroundColor: "#ffd7004d",
           borderLeft: "4px solid #FFD700",
-          marginBottom: "20px",
-          fontSize: "0.9em",
+          marginBottom: 20,
+          fontSize: "0.9em"
         }}
       >
         {t("weather_chat_disclaimer")}
       </div>
 
-      <p style={{ fontWeight: "bold" }}>
+      <p style={{ fontWeight: "bold", marginBottom: 8 }}>
         {t("context")}: {crop} {t("in_location")} {locationName}
       </p>
 
-         <textarea
-          value={userInput}
-          onChange={(e) => setUserInput(e.target.value)}
-          rows={4}
-          placeholder={t("weather_chat_textarea")}
-          style={{
-            width: "100%",
-            padding: 8,
-            marginBottom: 12,
-            backgroundColor: loading ? "#eee" : undefined,
-            color: loading ? "#888" : undefined,
-          }}
-          disabled={loading}
-    />
-    <button
-      type="button"
-      onClick={() => sendMessage(userInput)}
-      disabled={loading}
-      style={{
-        padding: "10px 20px",
-        cursor: loading ? "not-allowed" : "pointer",
-        background: loading ? "#ccc" : "#4CAF50",
-        color: loading ? "#888" : "white",
-        border: "none",
-        borderRadius: 4,
-        marginBottom: 20,
-      }}
-    >
-      {loading ? t("loading_sending") : t("button_send")}
-    </button>
-      {loading && (
-  <div style={{
-    marginBottom: 16,
-    fontWeight: "bold",
-    color: "#4CAF50",
-    fontSize: "1.1em",
-    letterSpacing: "1px",
-    animation: "blink 1s linear infinite"
-  }}>
-    Responding...
-    <style>
-      {`
-        @keyframes blink {
-          0% { opacity: 1; }
-          50% { opacity: 0.4; }
-          100% { opacity: 1; }
-        }
-      `}
-    </style>
-  </div>
-)}
-
-      {responseText && (
-        <div>
-          <h3>{t("response")}:</h3>
+      <div
+        style={{
+          border: "1px solid #ccc",
+          borderRadius: 8,
+          padding: 16,
+          marginBottom: 20,
+          height: 500,
+          overflowY: "auto",
+          background: "#fafafa",
+          display: "flex",
+          flexDirection: "column",
+          gap: "8px"
+        }}
+      >
+        {visibleMessages.map((msg, i) => (
           <div
+            key={i}
             style={{
-              padding: "10px",
-              border: "1px solid #ccc",
-              borderRadius: 4,
+              display: "flex",
+              justifyContent: msg.role === "user" ? "flex-end" : "flex-start",
             }}
           >
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-              {responseText}
-            </ReactMarkdown>
+            <div
+              style={{
+                maxWidth: "70%",
+                padding: "10px 14px",
+                borderRadius: 16,
+                background: msg.role === "user" ? "#4CAF50" : "#e0e0e0",
+                color: msg.role === "user" ? "white" : "black",
+                whiteSpace: "pre-wrap",
+                fontSize: "1em",
+                margin: 0,
+                lineHeight: 1.4,
+              }}
+            >
+              <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
+                components={{
+                  p: ({ children }) => <span>{children}</span>
+                }}
+              >
+                {msg.content}
+              </ReactMarkdown>
+            </div>
           </div>
-        </div>
-      )}
+        ))}
+
+        {loading && (
+          <div
+            style={{
+              color: "#4CAF50",
+              fontWeight: "bold",
+              fontSize: "1.1em",
+              letterSpacing: "1px",
+              animation: "blink 1s linear infinite"
+            }}
+          >
+            Responding...
+            <style>
+              {`
+                @keyframes blink {
+                  0% { opacity: 1; }
+                  50% { opacity: 0.4; }
+                  100% { opacity: 1; }
+                }
+              `}
+            </style>
+          </div>
+        )}
+      </div>
+
+      <textarea
+        value={userInput}
+        onChange={(e) => setUserInput(e.target.value)}
+        rows={3}
+        placeholder={t("weather_chat_textarea")}
+        disabled={loading}
+        style={{
+          width: "100%",
+          padding: 10,
+          marginBottom: 10,
+          opacity: loading ? 0.6 : 1,
+          fontSize: "1em",
+          borderRadius: 8,
+          border: "1px solid #ccc"
+        }}
+      />
+
+      <button
+        type="button"
+        onClick={() => handleSend(userInput)}
+        disabled={loading}
+        style={{
+          padding: "12px 24px",
+          cursor: loading ? "not-allowed" : "pointer",
+          background: loading ? "#ccc" : "#4CAF50",
+          color: "white",
+          border: "none",
+          borderRadius: 8,
+          fontSize: "1em"
+        }}
+      >
+        {loading ? t("loading_sending") : t("button_send")}
+      </button>
     </div>
   );
 }
