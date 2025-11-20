@@ -81,7 +81,7 @@ export default function MainMenu() {
       </button>
 
       <h1 style={{ color: "#4CAF50", fontSize: "3.5em", marginBottom: 10 }}>
-        Qwentory
+        Qwenchana
       </h1>
 
   
